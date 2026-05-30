@@ -14,13 +14,17 @@ node_modules/
 .env
 **/.env
 
-# Course material — large and copyrighted; keep the raw slides/video out of git
-lessons/**/*.mp4
-lessons/**/*.mov
-lessons/**/*.mkv
-lessons/**/*.webm
-lessons/**/*.pdf
-lessons/**/*.srt
+# Course material — downloaded paid-course content. Videos exceed GitHub's 100MB
+# per-file limit (the push itself would be REJECTED); slides are the course's
+# copyrighted material. This folder is raw INPUT — your output lives in the KG db.
+現代系統設計_課程講義/
+
+# Safety net: never commit lecture media wherever it lands (any project layout)
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.srt
 
 # Python bytecode (from the Whisper transcribe script)
 __pycache__/
