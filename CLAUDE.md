@@ -18,17 +18,30 @@
 
 ## 2. 每課流程 (Per-Lesson Loop)
 
-每堂課對應一個資料夾:`lessons/<NN-slug>/`(例:`lessons/03-consistent-hashing/`),內含 `slides.pdf` 與一支影片檔。
+### 課程素材地圖
 
-1. **讀投影片** — 直接 Read `lessons/<NN-slug>/slides.pdf`。投影片上老師寫的字是**原文證據**。
-2. **看影片(透過 Gemini)** — 影片是 Gemini 的工作:
-   - 先 `gemini_prepare_video(lesson="<NN-slug>")` 上傳並等到 ACTIVE(會快取 ~48h)。
-   - 針對特定片段提問:`gemini_ask_video(lesson, question, start="mm:ss", end="mm:ss")` —— 用來看某張架構圖、某段推導。
-   - 要整課鳥瞰:`gemini_digest_lesson(lesson)` —— 拿到逐字摘要 + 每張圖描述 + 架構演進 + 時間戳。
-3. **和使用者討論** — 對齊理解、補上脈絡、讓使用者口頭確認關鍵結論(口頭確認可成為 quote 證據)。
-4. **入庫 (capture)** — 把確定的知識依下面的信任規則寫進 KG,並用 `connect_knowledge` 連邊。
+素材放在 `現代系統設計_課程講義/` 底下,依章節分:
+`現代系統設計_課程講義/<NN_章節>/<編號. 設計名稱｜中文>/`。每個主題資料夾內含:
+- `<名稱>.pdf` — 亮色投影片,**讀這份**;`<名稱>_dark.pdf` — 暗色同內容,**忽略**。
+- `<名稱>.mp4` — 影片,**可能尚未補上**(目前只有 `07_真實大型應用設計` 的前兩課有,其餘陸續補)。
 
-> 在大量寫入前,先 `search_memory`(hybrid)看 KG 是否已有同概念 → 有就 `update_knowledge` 升級/補充,沒有才新建,避免重複節點。
+章節:`02_講義導讀 / 03_基本觀念 / 04_設計模式 / 05_常用技術 / 06_維運與可靠性 / 07_真實大型應用設計 / 08_面試模板`。
+
+呼叫 Gemini 工具時,`lesson` = 該主題資料夾**相對 `LESSONS_DIR` 的路徑**(`.mcp.json` 已把 `LESSONS_DIR` 設為 `現代系統設計_課程講義`),例:
+`07_真實大型應用設計/01. Design QR Code Generator｜QR Code 生成器`
+
+### 流程
+
+1. **有影片的課 → 首選 Gemini**(影片同時有投影片畫面 + 老師講解 + 手繪架構圖):
+   - `gemini_prepare_video(lesson)` 暖機上傳(~48h 快取;影片可能很大,首次要等)。
+   - `gemini_digest_lesson(lesson)` 拿整課鳥瞰;`gemini_ask_video(lesson, question, start, end)` 看特定片段/某張圖。
+2. **讀投影片 PDF** — 直接 Read 該主題的亮色 `.pdf`,投影片上老師寫的字是**原文證據**。
+   - ⚠️ 這台機器要能讀 PDF 需先裝 **poppler(`pdftoppm`)**(見 README)。**沒裝時**:有影片的課就靠 Gemini(它看得到投影片);純 PDF 的課請提醒使用者裝 poppler。
+   - 投影片是視覺 + 雙語型,**純文字抽取會掉中文 + 版面亂**,所以一律用「看的」(Claude 讀 PDF 影像 / Gemini 視覺),不要用文字抽取當證據。
+3. **和使用者討論** — 對齊理解、補脈絡;口頭確認可成為 quote 證據。
+4. **入庫 (capture)** — 依信任規則 `store_knowledge` + `connect_knowledge` 連邊。
+
+> 大量寫入前先 `search_memory`(hybrid)去重 → 有就 `update_knowledge`,沒有才新建。
 
 ---
 
