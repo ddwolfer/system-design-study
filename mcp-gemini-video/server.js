@@ -50,6 +50,9 @@ const EXPIRY_MARGIN_MS = 60 * 60 * 1000; // 1h safety margin
 // value: { uri, mimeType, name, expiresAtMs }
 const videoCache = new Map();
 
+// Same, for uploaded slide PDFs.
+const pdfCache = new Map();
+
 // ─── Lazy GenAI client ───────────────────────────────────────────────────────
 let _client = null;
 function getClient() {
@@ -153,6 +156,54 @@ function responseText(res) {
     return parts.map((p) => p.text || '').join('');
   }
   return '';
+}
+
+/** Find the lesson's slide PDF, preferring the light theme (skip *_dark.pdf). */
+function resolvePdfFile(lesson) {
+  const dir = path.join(lessonsDir(), lesson);
+  if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    throw new Error(`Lesson folder not found: ${dir}`);
+  }
+  const pdfs = fs.readdirSync(dir).filter((f) => path.extname(f).toLowerCase() === '.pdf');
+  if (pdfs.length === 0) throw new Error(`No .pdf found in ${dir}`);
+  const light = pdfs.find((f) => !/_dark\.pdf$/i.test(f));
+  return path.join(dir, light || pdfs[0]);
+}
+
+/**
+ * Ensure the lesson's slide PDF is uploaded and ACTIVE on Gemini; cache the handle.
+ * PDFs are small, so this usually returns ACTIVE almost immediately.
+ */
+async function ensurePdf(lesson) {
+  const cached = pdfCache.get(lesson);
+  if (isCacheFresh(cached)) return cached;
+
+  const ai = getClient();
+  const filePath = resolvePdfFile(lesson);
+
+  let uploaded = await ai.files.upload({ file: filePath, config: { mimeType: 'application/pdf' } });
+
+  const startedAt = Date.now();
+  const POLL_TIMEOUT_MS = 5 * 60 * 1000;
+  while (uploaded.state === 'PROCESSING') {
+    if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+      throw new Error(`Timed out waiting for Gemini to process the PDF for lesson "${lesson}".`);
+    }
+    await sleep(2000);
+    uploaded = await ai.files.get({ name: uploaded.name });
+  }
+  if (uploaded.state !== 'ACTIVE') {
+    throw new Error(`Gemini failed to process the PDF for lesson "${lesson}" (state=${uploaded.state}).`);
+  }
+
+  const entry = {
+    uri: uploaded.uri,
+    mimeType: uploaded.mimeType || 'application/pdf',
+    name: uploaded.name,
+    expiresAtMs: Date.now() + FILE_TTL_MS,
+  };
+  pdfCache.set(lesson, entry);
+  return entry;
 }
 
 // ─── Server ──────────────────────────────────────────────────────────────────
@@ -282,6 +333,66 @@ server.tool(
         content: [{ type: 'text', text: `ERROR: ${e.message}` }],
         isError: true,
       };
+    }
+  }
+);
+
+// ─── gemini_ask_pdf ───
+server.tool(
+  'gemini_ask_pdf',
+  'Ask Gemini about the lesson\'s slide PDF. Slides are visual + bilingual; Gemini reads the text (including Chinese) and any diagrams. Uploads/caches the PDF on first use.',
+  {
+    lesson: z.string().describe('Lesson name = subfolder under <projectRoot>/lessons/ (or LESSONS_DIR)'),
+    question: z.string().describe('What you want to know from the slides'),
+  },
+  async ({ lesson, question }) => {
+    try {
+      const ai = getClient();
+      const entry = await ensurePdf(lesson);
+      const prompt =
+        `Based on these lecture slides, answer: ${question}. ` +
+        'Quote the exact slide text where relevant and PRESERVE the original language (including Chinese) — do not translate or paraphrase quotes. Note any diagrams.';
+      const res = await ai.models.generateContent({
+        model: ASK_MODEL,
+        contents: [{ role: 'user', parts: [filePart(entry), { text: prompt }] }],
+      });
+      const text = responseText(res) || '(no text returned by model)';
+      return { content: [{ type: 'text', text }] };
+    } catch (e) {
+      return { content: [{ type: 'text', text: `ERROR: ${e.message}` }], isError: true };
+    }
+  }
+);
+
+// ─── gemini_digest_pdf ───
+server.tool(
+  'gemini_digest_pdf',
+  'Full slide-by-slide digest of the lesson\'s slide PDF: verbatim slide text (preserving Chinese) + diagram descriptions. Use for quote-grade capture of a PDF-only lesson. Uploads/caches on first use.',
+  {
+    lesson: z.string().describe('Lesson name = subfolder under <projectRoot>/lessons/'),
+  },
+  async ({ lesson }) => {
+    try {
+      const ai = getClient();
+      const entry = await ensurePdf(lesson);
+      const prompt = [
+        'Go through these lecture slides IN ORDER and produce Markdown, one section per slide:',
+        '',
+        '## Slide N',
+        '- **Verbatim text**: the exact text on the slide, preserving the original language',
+        '  (including Chinese). Do NOT translate or paraphrase — reproduce it faithfully.',
+        '- **Diagram**: if the slide has a diagram / architecture, describe its components and relationships.',
+        '',
+        'This will be used as quote-grade source material, so faithfulness matters more than brevity.',
+      ].join('\n');
+      const res = await ai.models.generateContent({
+        model: DIGEST_MODEL,
+        contents: [{ role: 'user', parts: [filePart(entry), { text: prompt }] }],
+      });
+      const text = responseText(res) || '(no markdown returned by model)';
+      return { content: [{ type: 'text', text }] };
+    } catch (e) {
+      return { content: [{ type: 'text', text: `ERROR: ${e.message}` }], isError: true };
     }
   }
 );

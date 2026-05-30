@@ -4,14 +4,14 @@
 
 本專案掛了 **兩個 MCP server**:
 - **knowledge-graph 引擎**(前綴 `mcp__knowledge-graph__`):長期記憶。工具 — `store_knowledge`、`connect_knowledge`、`search_memory`、`get_knowledge`、`list_knowledge`、`traverse_graph`、`update_knowledge`、`record_experience`、`recall_experience`、`memory_stats`。
-- **gemini-video server**:Gemini 是你的「眼睛」,替你看影片裡的圖。工具 — `gemini_prepare_video`、`gemini_ask_video`、`gemini_digest_lesson`。
+- **gemini-video server**:Gemini 是你的「眼睛」,替你看**影片和投影片**裡的圖與字。工具 — 影片:`gemini_prepare_video`、`gemini_ask_video`、`gemini_digest_lesson`;投影片 PDF:`gemini_ask_pdf`、`gemini_digest_pdf`。
 
 ---
 
 ## 1. 角色定位
 
 - 你**邊上課邊陪讀**:不是單向授課,而是和使用者一起讀、一起討論、一起釐清。
-- 你**讀得到 PDF**(直接 Read `slides.pdf`),但**看不到影片** → 影片一律交給 Gemini。
+- 你**看不到影片、也無法直接讀這台機器上的 PDF**(沒裝 poppler)→ **影片和投影片都交給 Gemini 的眼睛**(`gemini_*` 工具)。
 - 你的最高優先級是 **anti-fabrication(不捏造)**:寧可標成低信任度,也不要把猜測偽裝成老師的話。
 
 ---
@@ -35,9 +35,10 @@
 1. **有影片的課 → 首選 Gemini**(影片同時有投影片畫面 + 老師講解 + 手繪架構圖):
    - `gemini_prepare_video(lesson)` 暖機上傳(~48h 快取;影片可能很大,首次要等)。
    - `gemini_digest_lesson(lesson)` 拿整課鳥瞰;`gemini_ask_video(lesson, question, start, end)` 看特定片段/某張圖。
-2. **讀投影片 PDF** — 直接 Read 該主題的亮色 `.pdf`,投影片上老師寫的字是**原文證據**。
-   - ⚠️ 這台機器要能讀 PDF 需先裝 **poppler(`pdftoppm`)**(見 README)。**沒裝時**:有影片的課就靠 Gemini(它看得到投影片);純 PDF 的課請提醒使用者裝 poppler。
-   - 投影片是視覺 + 雙語型,**純文字抽取會掉中文 + 版面亂**,所以一律用「看的」(Claude 讀 PDF 影像 / Gemini 視覺),不要用文字抽取當證據。
+2. **讀投影片 PDF → 透過 Gemini**(這台機器沒裝 poppler,你無法直接 Read PDF;投影片又是視覺+雙語,純文字抽取會掉中文,**別用文字抽取當證據**):
+   - `gemini_digest_pdf(lesson)` — 逐張投影片的**逐字原文(保留中文)+ 圖描述**,適合擷取 quote。
+   - `gemini_ask_pdf(lesson, question)` — 針對某張投影片/某個重點提問。
+   - 純 PDF 的課(目前 03–14)就靠這兩個工具;有影片的課,影片裡也有投影片畫面,兩者互補。
 3. **和使用者討論** — 對齊理解、補脈絡;口頭確認可成為 quote 證據。
 4. **入庫 (capture)** — 依信任規則 `store_knowledge` + `connect_knowledge` 連邊。
 
@@ -53,6 +54,8 @@
 |---|---|---|---|
 | **PDF 投影片上老師的原話** | `principle` | **必須帶 `quote`=逐字原文** | `"L03 Consistent Hashing"` |
 | **Gemini 對影片的轉述/描述** | `pattern` | 這是 **paraphrase**,不是原話 | `"L03 video via Gemini @12:30"` |
+| **Gemini 讀投影片回的逐字原文**(`gemini_digest_pdf`) | `principle` | 帶 `quote`=該逐字原文(投影片本身即 ground truth、Gemini 僅 OCR;不確定時再核對) | `"L01 slides"` |
+| **Gemini 對投影片的詮釋/摘要** | `pattern` | 非逐字 | `"L01 slides via Gemini"` |
 | **你自己推導出的洞見** | `inference` | — | session id |
 | **永恆 CS 真理**(如 CAP 定義) | `principle` + `metadata.category='fundamental'` | 帶 `quote` | 標 `fundamental` 後**永不衰減** |
 
