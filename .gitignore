@@ -1,0 +1,27 @@
+# Dependencies — each sub-package (kg/, mcp-gemini-video/) installs its own
+node_modules/
+
+# Knowledge graph database — a binary that gets rewritten constantly (bad fit
+# for git). It's your portable "talent-pool master": back it up / merge it with
+# kg/scripts/merge-db.js rather than committing it. Delete these lines if you
+# really do want the knowledge version-controlled here.
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets — never commit the Gemini key (it lives in the GEMINI_API_KEY env var;
+# .env.example stays as the template)
+.env
+**/.env
+
+# Course material — large and copyrighted; keep the raw slides/video out of git
+lessons/**/*.mp4
+lessons/**/*.mov
+lessons/**/*.mkv
+lessons/**/*.webm
+lessons/**/*.pdf
+lessons/**/*.srt
+
+# Python bytecode (from the Whisper transcribe script)
+__pycache__/
+*.pyc

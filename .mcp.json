@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "knowledge-graph": {
+      "command": "node",
+      "args": [
+        "D:/AI/system-design-study/kg/main.js",
+        "--db",
+        "D:/AI/system-design-study/system-design.db"
+      ]
+    },
+    "gemini-video": {
+      "command": "node",
+      "args": [
+        "D:/AI/system-design-study/mcp-gemini-video/server.js"
+      ],
+      "env": {
+        "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+      }
+    }
+  }
+}
