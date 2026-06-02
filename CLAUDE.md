@@ -41,10 +41,13 @@
    - `gemini_digest_pdf(lesson)` — 逐張投影片的**逐字原文(保留中文)+ 圖描述**,適合擷取 quote。
    - `gemini_ask_pdf(lesson, question)` — 針對某張投影片/某個重點提問。
    - 純 PDF 的課(目前 03–14)就靠這兩個工具;有影片的課,影片裡也有投影片畫面,兩者互補。
+   - **讀完整課就存原文備份**:把 `gemini_digest_pdf` 回傳的逐字原文**原樣存成 `notes/<NN_章節>/<課>/digest.md`**。這是「原文快取」——日後要精確 quote 某張投影片時,用 `Grep`/`Read` 只撈那一段,**不必再叫 Gemini 重讀整份 PDF**(省 Gemini token + 等待)。
 3. **和使用者討論** — 對齊理解、補脈絡;口頭確認可成為 quote 證據。
 4. **入庫 (capture)** — 依信任規則 `store_knowledge` + `connect_knowledge` 連邊。
 
 > 大量寫入前先 `search_memory`(hybrid)去重 → 有就 `update_knowledge`,沒有才新建。
+
+> 💡 **省 token 心法**:每課 PDF **只讀一次**(`gemini_digest_pdf`)→ 蒸餾進 KG。日後複習查 KG(`search_memory`/`get_knowledge`)只回幾十 token 的精華節點,**不重灌整包投影片**——這才是讓複習便宜的關鍵。`digest.md` 只在「回撈某張投影片逐字原話」時翻;光存 md 不會省你自己的 context token(讀回來一樣貴),它省的是「不必再請 Gemini 重讀 PDF」。
 
 ---
 
