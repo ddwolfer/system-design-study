@@ -5,7 +5,7 @@
       "args": [
         "D:/AI/system-design-study/kg/main.js",
         "--db",
-        "D:/AI/system-design-study/system-design.db"
+        "D:/AI/system-design-study/kg/system-design.db"
       ]
     },
     "gemini-video": {

@@ -5,7 +5,6 @@ node_modules/
 # for git). It's your portable "talent-pool master": back it up / merge it with
 # kg/scripts/merge-db.js rather than committing it. Delete these lines if you
 # really do want the knowledge version-controlled here.
-*.db
 *.db-wal
 *.db-shm
 
@@ -34,3 +33,5 @@ notes/
 # Python bytecode (from the Whisper transcribe script)
 __pycache__/
 *.pyc
+
+*.zip

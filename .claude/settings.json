@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:/AI/system-design-study/kg/hooks/session-start.js \"D:/AI/system-design-study/system-design.db\"",
+            "command": "node D:/AI/system-design-study/kg/hooks/session-start.js \"D:/AI/system-design-study/kg/system-design.db\"",
             "timeout": 10
           }
         ]
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:/AI/system-design-study/kg/hooks/post-compact.js \"D:/AI/system-design-study/system-design.db\"",
+            "command": "node D:/AI/system-design-study/kg/hooks/post-compact.js \"D:/AI/system-design-study/kg/system-design.db\"",
             "timeout": 10
           }
         ]
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:/AI/system-design-study/kg/hooks/auto-recall.js \"D:/AI/system-design-study/system-design.db\"",
+            "command": "node D:/AI/system-design-study/kg/hooks/auto-recall.js \"D:/AI/system-design-study/kg/system-design.db\"",
             "timeout": 10
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node D:/AI/system-design-study/kg/hooks/search-enforcer.js \"D:/AI/system-design-study/system-design.db\"",
+            "command": "node D:/AI/system-design-study/kg/hooks/search-enforcer.js \"D:/AI/system-design-study/kg/system-design.db\"",
             "timeout": 5
           }
         ]
