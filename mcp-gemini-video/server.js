@@ -31,6 +31,38 @@ const __dirname = path.dirname(__filename);
 // projectRoot = the generated learning project (this server lives in <projectRoot>/mcp-gemini-video)
 const projectRoot = path.join(__dirname, '..');
 
+/**
+ * Load this folder's .env (zero-dependency). The .env is the authoritative source
+ * for GEMINI_API_KEY: it OVERRIDES any value inherited from the launching process.
+ * This matters because the MCP host may spawn us with a stale/invalid GEMINI_API_KEY
+ * baked in at host-launch time (e.g. .mcp.json's "${GEMINI_API_KEY}" expansion); a
+ * fresh key dropped in .env then fixes us without restarting the host. .env is gitignored.
+ */
+function loadDotenv() {
+  let raw;
+  try {
+    raw = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+  } catch {
+    return; // no .env → rely on the process environment
+  }
+  for (const line of raw.split(/\r?\n/)) {
+    const s = line.trim();
+    if (!s || s.startsWith('#')) continue;
+    const eq = s.indexOf('=');
+    if (eq < 0) continue;
+    const key = s.slice(0, eq).trim();
+    let val = s.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    if (key) process.env[key] = val; // .env wins
+  }
+}
+loadDotenv();
+
 const ASK_MODEL = process.env.GEMINI_ASK_MODEL || 'gemini-2.5-flash';
 const DIGEST_MODEL = process.env.GEMINI_DIGEST_MODEL || 'gemini-2.5-pro';
 
@@ -97,6 +129,31 @@ function isCacheFresh(entry) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Upload a lesson file to the Gemini Files API by reading it into a Blob and uploading
+ * the Blob — NOT the file path. Two reasons, both Windows + non-ASCII specific:
+ *
+ *  1) ByteString header crash. Given a string path, the SDK derives the basename and
+ *     sends it in the `X-Goog-Upload-File-Name` HTTP header, which must be Latin-1.
+ *     Our lesson files have Chinese names, so this throws
+ *     "Cannot convert argument to a ByteString". A Blob has no name, so the SDK omits
+ *     that header entirely.
+ *
+ *  2) Native upload crash. On Node 24 + Windows the SDK's path-based streaming upload
+ *     (uploadFileFromPath) crashes intermittently with STATUS_STACK_BUFFER_OVERRUN
+ *     (exit 0xC0000409) on multi-hundred-KB files. The Blob path (uploadBlob) is a
+ *     different, stable code path.
+ *
+ * Trade-off: the whole file is buffered in memory (~2x its size transiently). Fine for
+ * slide PDFs (a few MB); for large videos this costs RAM, but the streaming path is not
+ * a usable alternative here because it crashes.
+ */
+async function uploadLessonFile(ai, filePath, mimeType) {
+  const buf = await fs.promises.readFile(filePath);
+  const blob = new Blob([buf], { type: mimeType });
+  return ai.files.upload({ file: blob, config: { mimeType } });
+}
+
+/**
  * Ensure the lesson's video is uploaded and ACTIVE on Gemini's side; cache the handle.
  * Returns the cache entry { uri, mimeType, name, expiresAtMs }.
  */
@@ -109,10 +166,7 @@ async function ensurePrepared(lesson) {
   const ext = path.extname(filePath).toLowerCase();
   const mimeType = MIME_BY_EXT[ext] || 'video/mp4';
 
-  let uploaded = await ai.files.upload({
-    file: filePath,
-    config: { mimeType },
-  });
+  let uploaded = await uploadLessonFile(ai, filePath, mimeType);
 
   // Poll until the file leaves PROCESSING.
   const startedAt = Date.now();
@@ -181,7 +235,7 @@ async function ensurePdf(lesson) {
   const ai = getClient();
   const filePath = resolvePdfFile(lesson);
 
-  let uploaded = await ai.files.upload({ file: filePath, config: { mimeType: 'application/pdf' } });
+  let uploaded = await uploadLessonFile(ai, filePath, 'application/pdf');
 
   const startedAt = Date.now();
   const POLL_TIMEOUT_MS = 5 * 60 * 1000;
