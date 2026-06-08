@@ -17,6 +17,12 @@
         "GEMINI_API_KEY": "${GEMINI_API_KEY}",
         "LESSONS_DIR": "D:/AI/system-design-study/現代系統設計_課程講義"
       }
+    },
+    "study-web": {
+      "command": "node",
+      "args": [
+        "D:/AI/system-design-study/study-web/server.js"
+      ]
     }
   }
 }

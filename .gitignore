@@ -35,3 +35,7 @@ __pycache__/
 *.pyc
 
 *.zip
+
+# dual-plan rendered HTML — regenerated from plan.md by render.py; the .md is
+# canonical and stays in git, the .html (and history/) is a local view.
+plans/**/plan.html
