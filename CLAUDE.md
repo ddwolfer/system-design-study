@@ -42,7 +42,7 @@
    - `gemini_ask_pdf(lesson, question)` — 針對某張投影片/某個重點提問。
    - 純 PDF 的課(目前 03–14)就靠這兩個工具;有影片的課,影片裡也有投影片畫面,兩者互補。
    - **讀完整課就存原文備份**:把 `gemini_digest_pdf` 回傳的逐字原文**原樣存成 `notes/<NN_章節>/<課>/digest.md`**。這是「原文快取」——日後要精確 quote 某張投影片時,用 `Grep`/`Read` 只撈那一段,**不必再叫 Gemini 重讀整份 PDF**(省 Gemini token + 等待)。
-3. **和使用者討論** — 對齊理解、補脈絡;口頭確認可成為 quote 證據。
+3. **和使用者討論 + 回講(見 §8)** — 對齊理解、補脈絡;請使用者用自己的話講回來,口頭確認可成為 quote 證據(據以升級 principle)。
 4. **入庫 (capture)** — 依信任規則 `store_knowledge` + `connect_knowledge` 連邊。
 
 > 大量寫入前先 `search_memory`(hybrid)去重 → 有就 `update_knowledge`,沒有才新建。
@@ -112,10 +112,25 @@
 
 ---
 
+## 8. 教學手法 (Pedagogy) — 怎麼教,不只怎麼記
+
+「讀完入庫」只完成一半;要記得牢,得讓使用者**自己輸出**。每個重要概念(或每課收尾)跑這三招,而且**都接回既有機制**:
+
+- **回講 / 自我解釋 (teach-back / self-explanation)** —— 教完一個概念,**請使用者用自己的話講回來**,從他的講法抓漏洞/誤解,針對漏洞再補。
+  - 講對 = **口頭確認** → 依 §3 可把相關 `pattern` 節點 `update_knowledge` **升級成 `principle`**(`quote` 帶他的正確表述或投影片原文)。
+  - 講錯/卡住 = 那裡就是還不懂的點 → 一起重看該段(`gemini_ask_pdf` / `digest.md`)→ 再 reinforce。
+  - ⚠️ 這**不是單一學術理論**,而是站在三條實證之上:**self-explanation effect**、**learning-by-teaching / protégé effect**、醫療衛教的 **teach-back**。口語可叫「費曼法」,但別宣稱有個叫「費曼回講」的理論。
+- **第一性原理 (first principles)** —— 解釋術語從最基本構件拆起、講「**為什麼**會這樣」,而不是要使用者死背結論。
+- **教完即考 (active recall)** —— 不只 §6 的開場複習;**每課收尾**也用 2–3 題「不看筆記」的問題測,答完給更正。與 §6 同一套(都靠 KG 的 R,別退化成固定行事曆)。
+
+> 💻 配 study-web 座艙:回講、收尾小考都很適合在**聊天面板**進行;使用者答錯時,用 `show_notes` 把該段重新推到閱讀面板一起看。
+
+---
+
 ## Session Start Checklist(開場檢查清單)
 
 1. `memory_stats` —— 看一眼目前 KG 規模(節點/邊/episode 數)。
 2. `list_knowledge(sort='strength', limit=10)` —— 找出低 R 節點,**考問使用者 2–3 題**(答對就 `get_knowledge` 讀一次以 reinforce)。
 3. 問使用者:**今天上哪一課 `<NN-slug>`?**
-4. 進入每課流程:Read `slides.pdf` → `gemini_prepare_video` →(`gemini_ask_video` 片段 / `gemini_digest_lesson` 整課)→ 討論 → 依信任規則 `store_knowledge` + `connect_knowledge`,設計走查補 `record_experience`。
+4. 進入每課流程:Read `slides.pdf` → `gemini_prepare_video` →(`gemini_ask_video` 片段 / `gemini_digest_lesson` 整課)→ 討論 + **回講(§8)** → 依信任規則 `store_knowledge` + `connect_knowledge`,設計走查補 `record_experience`;**每課收尾考 2–3 題(active recall)**。
 5. 寫入前先 `search_memory` 去重;principle 一定要帶 `quote`;Gemini 轉述一律先存 `pattern`。
