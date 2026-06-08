@@ -212,28 +212,50 @@ function responseText(res) {
   return '';
 }
 
-/** Find the lesson's slide PDF, preferring the light theme (skip *_dark.pdf). */
-function resolvePdfFile(lesson) {
+/** List the lesson's slide PDFs (light theme only — skip *_dark.pdf), sorted by name. */
+function listLessonPdfs(lesson) {
   const dir = path.join(lessonsDir(), lesson);
   if (!fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
     throw new Error(`Lesson folder not found: ${dir}`);
   }
-  const pdfs = fs.readdirSync(dir).filter((f) => path.extname(f).toLowerCase() === '.pdf');
+  return fs.readdirSync(dir)
+    .filter((f) => path.extname(f).toLowerCase() === '.pdf')
+    .filter((f) => !/_dark\.pdf$/i.test(f))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Find a lesson's slide PDF. If `file` is given, match it by exact name or by
+ * filename stem (case-insensitive, with/without the .pdf extension); otherwise
+ * return the first PDF in the folder. Throws (listing what IS available) when
+ * the requested file can't be found.
+ */
+function resolvePdfFile(lesson, file) {
+  const dir = path.join(lessonsDir(), lesson);
+  const pdfs = listLessonPdfs(lesson);
   if (pdfs.length === 0) throw new Error(`No .pdf found in ${dir}`);
-  const light = pdfs.find((f) => !/_dark\.pdf$/i.test(f));
-  return path.join(dir, light || pdfs[0]);
+  if (!file) return path.join(dir, pdfs[0]);
+  const want = file.toLowerCase().replace(/\.pdf$/i, '').trim();
+  const match = pdfs.find((f) => f.toLowerCase().replace(/\.pdf$/i, '') === want);
+  if (!match) {
+    throw new Error(
+      `PDF "${file}" not found in lesson "${lesson}". Available PDFs: ${pdfs.join(' | ')}`
+    );
+  }
+  return path.join(dir, match);
 }
 
 /**
  * Ensure the lesson's slide PDF is uploaded and ACTIVE on Gemini; cache the handle.
  * PDFs are small, so this usually returns ACTIVE almost immediately.
  */
-async function ensurePdf(lesson) {
-  const cached = pdfCache.get(lesson);
+async function ensurePdf(lesson, file) {
+  const filePath = resolvePdfFile(lesson, file);
+
+  const cached = pdfCache.get(filePath);
   if (isCacheFresh(cached)) return cached;
 
   const ai = getClient();
-  const filePath = resolvePdfFile(lesson);
 
   let uploaded = await uploadLessonFile(ai, filePath, 'application/pdf');
 
@@ -256,7 +278,7 @@ async function ensurePdf(lesson) {
     name: uploaded.name,
     expiresAtMs: Date.now() + FILE_TTL_MS,
   };
-  pdfCache.set(lesson, entry);
+  pdfCache.set(filePath, entry);
   return entry;
 }
 
@@ -394,15 +416,22 @@ server.tool(
 // ─── gemini_ask_pdf ───
 server.tool(
   'gemini_ask_pdf',
-  'Ask Gemini about the lesson\'s slide PDF. Slides are visual + bilingual; Gemini reads the text (including Chinese) and any diagrams. Uploads/caches the PDF on first use.',
+  'Ask Gemini about the lesson\'s slide PDF. Slides are visual + bilingual; Gemini reads the text (including Chinese) and any diagrams. Uploads/caches the PDF on first use. If the lesson folder has multiple PDFs and `file` is omitted, returns the list of available PDFs instead of answering.',
   {
     lesson: z.string().describe('Lesson name = subfolder under <projectRoot>/lessons/ (or LESSONS_DIR)'),
     question: z.string().describe('What you want to know from the slides'),
+    file: z.string().optional().describe('Which PDF in the lesson folder to read (name or stem, e.g. "REST" or "REST.pdf"). Required only when the folder has more than one PDF.'),
   },
-  async ({ lesson, question }) => {
+  async ({ lesson, question, file }) => {
     try {
+      const pdfs = listLessonPdfs(lesson);
+      if (pdfs.length > 1 && !file) {
+        return { content: [{ type: 'text', text:
+          `Lesson "${lesson}" has ${pdfs.length} PDFs. Re-call with the "file" parameter set to one of:\n` +
+          pdfs.map((f) => `- ${f}`).join('\n') }] };
+      }
       const ai = getClient();
-      const entry = await ensurePdf(lesson);
+      const entry = await ensurePdf(lesson, file);
       const prompt =
         `Based on these lecture slides, answer: ${question}. ` +
         'Quote the exact slide text where relevant and PRESERVE the original language (including Chinese) — do not translate or paraphrase quotes. Note any diagrams.';
@@ -421,14 +450,21 @@ server.tool(
 // ─── gemini_digest_pdf ───
 server.tool(
   'gemini_digest_pdf',
-  'Full slide-by-slide digest of the lesson\'s slide PDF: verbatim slide text (preserving Chinese) + diagram descriptions. Use for quote-grade capture of a PDF-only lesson. Uploads/caches on first use.',
+  'Full slide-by-slide digest of the lesson\'s slide PDF: verbatim slide text (preserving Chinese) + diagram descriptions. Use for quote-grade capture of a PDF-only lesson. Uploads/caches on first use. If the lesson folder has multiple PDFs and `file` is omitted, returns the list of available PDFs instead of digesting.',
   {
     lesson: z.string().describe('Lesson name = subfolder under <projectRoot>/lessons/'),
+    file: z.string().optional().describe('Which PDF in the lesson folder to digest (name or stem, e.g. "B+ Tree" or "B+ Tree.pdf"). Required only when the folder has more than one PDF.'),
   },
-  async ({ lesson }) => {
+  async ({ lesson, file }) => {
     try {
+      const pdfs = listLessonPdfs(lesson);
+      if (pdfs.length > 1 && !file) {
+        return { content: [{ type: 'text', text:
+          `Lesson "${lesson}" has ${pdfs.length} PDFs. Re-call with the "file" parameter set to one of:\n` +
+          pdfs.map((f) => `- ${f}`).join('\n') }] };
+      }
       const ai = getClient();
-      const entry = await ensurePdf(lesson);
+      const entry = await ensurePdf(lesson, file);
       const prompt = [
         'Go through these lecture slides IN ORDER and produce Markdown, one section per slide:',
         '',
