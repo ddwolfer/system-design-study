@@ -49,6 +49,19 @@ function broadcast(obj) {
   }
 }
 
+// ---- session state, replayed to a (re)connecting browser ----
+// The browser holds no persistent state; on refresh/reconnect it would lose the
+// notes panel + chat log. We keep the authoritative copy here and send a
+// `snapshot` on every WS connection so the page can rebuild (and catch up on
+// anything broadcast while it was briefly disconnected).
+let lastNotes = null            // { lesson, markdown, ts } — last show_notes
+const history = []              // [{ from:'user'|'assistant', text, ts }]
+const HISTORY_MAX = 200
+function pushHistory(entry) {
+  history.push(entry)
+  if (history.length > HISTORY_MAX) history.shift()
+}
+
 // ---- MCP channel server (low-level Server: needed to declare experimental caps) ----
 const mcp = new Server(
   { name: 'study-web', version: '0.1.0' },
@@ -104,12 +117,14 @@ mcp.setRequestHandler(CallToolRequestSchema, async req => {
       case 'reply': {
         const text = String(args.text ?? '')
         const id = nextId()
+        pushHistory({ from: 'assistant', text, ts: Date.now() })
         broadcast({ type: 'msg', id, from: 'assistant', text, ts: Date.now() })
         return { content: [{ type: 'text', text: `sent to chat (${id})` }] }
       }
       case 'show_notes': {
         const markdown = String(args.markdown ?? '')
         const lesson = args.lesson ? String(args.lesson) : ''
+        lastNotes = { lesson, markdown, ts: Date.now() }
         broadcast({ type: 'notes', lesson, markdown, ts: Date.now() })
         return { content: [{ type: 'text', text: `notes shown in reading panel (${markdown.length} chars)` }] }
       }
@@ -183,18 +198,26 @@ const httpServer = createServer(async (req, res) => {
 const wss = new WebSocketServer({ server: httpServer, path: '/ws' })
 wss.on('connection', ws => {
   clients.add(ws)
+  // Replay authoritative state so a refreshed/reconnected page rebuilds its
+  // notes panel + chat log (and catches up on anything sent while it was away).
+  try { ws.send(JSON.stringify({ type: 'snapshot', notes: lastNotes, history })) } catch { /* socket already gone */ }
   ws.on('close', () => clients.delete(ws))
   ws.on('error', () => clients.delete(ws))
   ws.on('message', raw => {
     try {
       const m = JSON.parse(String(raw))
-      if (m.type === 'ask' && typeof m.text === 'string' && m.text.trim()) {
-        let content = m.text.trim()
+      if (m.type === 'ask') {
+        // deeper-mode cards send {mode,term,question} with no `text` — build the
+        // prompt from term/question; plain chat sends {text}. Don't gate on text.
+        let content = typeof m.text === 'string' ? m.text.trim() : ''
+        // Record the user's displayed bubble (m.text is the bubble label for
+        // both plain chat and deeper cards) so it survives a refresh.
+        if (content) pushHistory({ from: 'user', text: content, ts: Date.now() })
         if (m.mode === 'deeper' && m.term) {
           const q = (m.question || '').trim()
           content = `[在課程脈絡中深入解釋術語「${m.term}」]${q ? ' ' + q : ''}`
         }
-        deliver(content)
+        if (content) deliver(content)
       }
     } catch { /* ignore malformed frames */ }
   })

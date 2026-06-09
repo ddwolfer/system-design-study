@@ -273,7 +273,7 @@ function openCard(id, anchor) {
     const term = def.term || id;
     const q = def.deeper || ("請深入解釋:" + term);
     addUser("🔎 " + term);
-    wsSend({ type: "ask", mode: "deeper", term, question: q });
+    wsSend({ type: "ask", mode: "deeper", term, question: q, text: "🔎 " + term });
     closeCard();
   };
   card.style.display = "block";
@@ -326,7 +326,22 @@ function connect() {
     let m; try { m = JSON.parse(e.data); } catch (_) { return; }
     if (m.type === "msg" && m.from === "assistant") { clearAck(); addAssistant(m.text); }
     else if (m.type === "notes") { clearAck(); renderNotes(m.markdown, m.lesson); }
+    else if (m.type === "snapshot") { clearAck(); applySnapshot(m); }
   };
+}
+// Rebuild the whole UI from the server's authoritative state on every (re)connect.
+// Idempotent: clears the chat log first, so transient reconnects don't duplicate
+// and the page catches up on anything broadcast while it was disconnected.
+function applySnapshot(m) {
+  if (m.notes && m.notes.markdown) renderNotes(m.notes.markdown, m.notes.lesson);
+  log.innerHTML = "";
+  log.classList.add("empty");
+  if (Array.isArray(m.history)) {
+    for (const h of m.history) {
+      if (h.from === "user") addUser(h.text);
+      else addAssistant(h.text);
+    }
+  }
 }
 connect();
 
