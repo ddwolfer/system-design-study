@@ -18,10 +18,11 @@ node_modules/
 # copyrighted material. This folder is raw INPUT — your output lives in the KG db.
 現代系統設計_課程講義/
 
-# Lesson digests — verbatim slide text Gemini extracts (gemini_digest_pdf), saved
-# as a local re-read cache. Same copyrighted course content as the slides, so keep
-# it out of git too. The durable, shareable output is the KG db, not these.
-notes/
+# Lesson digests + rewritten web-notes (notes/) — INTENTIONALLY TRACKED so the
+# re-read caches sync across machines (Windows ↔ MacBook). These contain verbatim
+# copyrighted course slide text (gemini_digest_pdf OCR).
+# ⚠️ This is ONLY acceptable because the repo is PRIVATE. If it is ever made
+#    PUBLIC, re-add `notes/` to this file FIRST (copyright) before pushing.
 
 # Safety net: never commit lecture media wherever it lands (any project layout)
 *.mp4
