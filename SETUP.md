@@ -81,7 +81,7 @@ cp .claude/settings.local.json.example .claude/settings.local.json
 | `node_modules/` | ❌ | 各機器 `npm install`(原生套件要本機編譯) |
 | `GEMINI_API_KEY` / `.env` | ❌ | 密鑰不進 git,手動設定 |
 | `現代系統設計_課程講義/`(課程素材) | ❌ | 版權 + 影片過大,雲端手動搬 |
-| `notes/`(digest、web-notes 快取) | ❌ | 版權內容;新機器重新產生即可 |
+| `notes/`(digest、web-notes 快取) | ✅ | 已納入版控(**僅因 repo 為 private**);clone 即有,免重跑 Gemini。轉 public 前須先排除 |
 | `.claude/settings.local.json` | ❌ | 用 `.example` 複製 |
 
 ---
