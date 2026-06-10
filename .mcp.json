@@ -3,25 +3,25 @@
     "knowledge-graph": {
       "command": "node",
       "args": [
-        "D:/AI/system-design-study/kg/main.js",
+        "kg/main.js",
         "--db",
-        "D:/AI/system-design-study/kg/system-design.db"
+        "kg/system-design.db"
       ]
     },
     "gemini-video": {
       "command": "node",
       "args": [
-        "D:/AI/system-design-study/mcp-gemini-video/server.js"
+        "mcp-gemini-video/server.js"
       ],
       "env": {
         "GEMINI_API_KEY": "${GEMINI_API_KEY}",
-        "LESSONS_DIR": "D:/AI/system-design-study/現代系統設計_課程講義"
+        "LESSONS_DIR": "現代系統設計_課程講義"
       }
     },
     "study-web": {
       "command": "node",
       "args": [
-        "D:/AI/system-design-study/study-web/server.js"
+        "study-web/server.js"
       ]
     }
   }

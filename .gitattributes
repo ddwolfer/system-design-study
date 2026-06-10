@@ -1,0 +1,4 @@
+# Shell launchers MUST use LF — a CRLF shebang makes macOS/Linux fail with
+# "bad interpreter: /bin/bash^M". Force LF regardless of core.autocrlf.
+*.command text eol=lf
+*.sh      text eol=lf
