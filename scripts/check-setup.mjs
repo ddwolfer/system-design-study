@@ -144,7 +144,7 @@ head('Config paths are portable (no hard-coded drive letters)')
   for (const f of ['.mcp.json', '.claude/settings.json']) {
     if (!exists(f)) continue
     const txt = readFileSync(rpath(f), 'utf8')
-    const hits = txt.match(/[A-Za-z]:[\\/]/g)
+    const hits = txt.match(/(?<![A-Za-z])[A-Za-z]:[\\/]/g)
     if (hits) { leaked = true; warn(`${f} has absolute path(s) like "${hits[0]}…" — works on the original machine but breaks on others; change to relative (e.g. kg/main.js). See SETUP.md step 6 for ${f === '.claude/settings.json' ? 'the hook fix' : 'this'}.`) }
   }
   if (!leaked) ok('.mcp.json and .claude/settings.json use relative paths')

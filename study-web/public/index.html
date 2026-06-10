@@ -355,6 +355,9 @@ form.onsubmit = e => {
   wsSend({ type: "ask", text });
 };
 input.addEventListener("keydown", e => {
+  // 忽略 IME 組字中(選字)按下的 Enter —— macOS 注音/拼音確認候選字時也會送 Enter,
+  // isComposing 在部分瀏覽器不可靠,故同時檢查 keyCode === 229。
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
 });
 input.addEventListener("input", () => {
