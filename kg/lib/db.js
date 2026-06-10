@@ -16,7 +16,10 @@ let db = null;
 
 export function setDbPath(customPath) {
   if (db) throw new Error('setDbPath must be called before getDb()');
-  DB_PATH = isAbsolute(customPath) ? customPath : join(__dirname, '..', customPath);
+  // Relative --db paths are resolved against the launch cwd (project root) —
+  // that's the convention .mcp.json and the hooks use ("kg/system-design.db").
+  // (Resolving against __dirname/.. = kg/ would double to kg/kg/… and fail.)
+  DB_PATH = isAbsolute(customPath) ? customPath : join(process.cwd(), customPath);
 }
 
 export function getDbPath() {
