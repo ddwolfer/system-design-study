@@ -40,3 +40,6 @@ __pycache__/
 # dual-plan rendered HTML — regenerated from plan.md by render.py; the .md is
 # canonical and stays in git, the .html (and history/) is a local view.
 plans/**/plan.html
+
+# study-web runtime state (last lesson + chat history) — machine-local
+study-web/state.json

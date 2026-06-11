@@ -19,6 +19,8 @@ description: Use when interacting through the study-web browser cockpit (message
 - 使用者說「**上 X 課 / 開 X 課 / 看 X**」→ 跑下方「重寫流程」→ `show_notes`。
 - 使用者按術語小卡的「深入」→ 進來的訊息會像 `[在課程脈絡中深入解釋術語「…」] …`,用 `reply` 給**簡短、白話**的解釋(再有 jargon 就也包成 `[[…]]`,見下)。
 - 一般提問 → `reply` 富文字回答。
+- **長任務先簡答**:預估要超過 ~30 秒的工作(備課/重寫講義、跑 Gemini、看影片片段),**先 `reply` 一行**「收到,正在 X,約需 N 分鐘」再開工,做完再送正式內容。短問題一次答完,**不要**拆成「簡短版+詳細版」兩則(那只會讓使用者等兩次)。
+- 使用者說「**預載 X / 先準備好接下來幾課**」→ 跑下方「預載流程」。
 - 一律遵循專案 `CLAUDE.md`:教練人設、anti-fabrication、信任規則、KG 流程、間隔複習。
 
 ## 重寫流程(PDF → 可點網頁筆記)
@@ -27,9 +29,20 @@ description: Use when interacting through the study-web browser cockpit (message
 2. 先查快取:若 `notes/<NN_章節>/<課>/web-notes.md` 已存在 → 直接讀它 `show_notes`,**不重跑 Gemini/重寫**。
 3. 否則:`gemini_digest_pdf(lesson[, file])`(多 PDF 課:先不帶 `file` 拿清單,再逐份)。把回傳逐字原文存成 `notes/<NN_章節>/<課>/digest.md`(沿用既有 header 慣例)。
 4. 把 digest **重寫成乾淨雙語筆記**:標題層次、短段落、必要處用 ```mermaid 畫架構/流程。關鍵術語用**可點標記**(見下)。
-5. 結尾附**一個** glossary JSON 區塊。把成品**存成 `notes/<NN_章節>/<課>/web-notes.md`**(下次直接讀檔),再 `show_notes(lesson, 該 markdown)`。
+5. 結尾附**一個** glossary JSON 區塊。把成品**存成 `notes/<NN_章節>/<課>/web-notes.md`**(下次直接讀檔)。
+6. **存檔後跑驗證**:`node scripts/check-web-notes.mjs "notes/<NN_章節>/<課>"` —— 檢查 glossary JSON 合法、每個 `[[id]]` 都有條目、表格內沒有豎線形式;修到 ✅ 再 `show_notes(lesson, 該 markdown)`。
 
 > 省 token 鐵則(同 `CLAUDE.md`):每課 PDF 只用 Gemini 讀一次;重寫結果寫檔快取;之後複習查 KG / 讀 `web-notes.md`,別重灌投影片。
+
+## 預載流程 (preload)
+
+目的:提前把多課的 `web-notes.md` 快取灌滿,之後上課秒開(瀏覽器歡迎畫面會把有快取的課標 ⚡)。
+
+1. 先 `reply` 一行告知要預載哪幾課、大約多久。
+2. 逐課跑「重寫流程」步驟 2–5,**但不要 `show_notes`**(只寫檔,不打斷目前畫面)。已有 `web-notes.md` 的課直接跳過。
+3. 全部完成後 `reply` 總結:完成了哪幾課、哪幾課本來就有快取。
+
+> ⚠️ 每課 digest 很佔 context,**一次預載以 2–3 課為限**;更多課請使用者分批,或交給 builder session 用 subagent 平行跑。
 
 ## 可點術語約定 (term contract)
 

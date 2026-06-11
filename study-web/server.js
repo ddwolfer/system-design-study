@@ -26,7 +26,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { createServer } from 'node:http'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { WebSocketServer } from 'ws'
@@ -34,6 +34,10 @@ import { WebSocketServer } from 'ws'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const DEFAULT_PORT = Number(process.env.STUDY_WEB_PORT ?? 7654)
 const INDEX_HTML = join(__dirname, 'public', 'index.html')
+const STATE_FILE = join(__dirname, 'state.json')
+const PROJECT_ROOT = join(__dirname, '..')
+const LESSONS_ROOT = join(PROJECT_ROOT, '現代系統設計_課程講義')
+const NOTES_ROOT = join(PROJECT_ROOT, 'notes')
 
 // ---- WebSocket client registry + broadcast ----
 const clients = new Set()
@@ -54,12 +58,55 @@ function broadcast(obj) {
 // notes panel + chat log. We keep the authoritative copy here and send a
 // `snapshot` on every WS connection so the page can rebuild (and catch up on
 // anything broadcast while it was briefly disconnected).
+// It is ALSO persisted to state.json so closing the coach session / rebooting
+// doesn't wipe the reading panel — next launch restores the last lesson + chat.
 let lastNotes = null            // { lesson, markdown, ts } — last show_notes
 const history = []              // [{ from:'user'|'assistant', text, ts }]
 const HISTORY_MAX = 200
+try {
+  const s = JSON.parse(readFileSync(STATE_FILE, 'utf8'))
+  if (s && s.lastNotes && typeof s.lastNotes.markdown === 'string') lastNotes = s.lastNotes
+  if (s && Array.isArray(s.history)) history.push(...s.history.slice(-HISTORY_MAX))
+} catch { /* first run / corrupt state — start clean */ }
+
+let saveTimer = null
+function saveState(immediate = false) {
+  if (immediate) {
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null }
+    try { writeFileSync(STATE_FILE, JSON.stringify({ lastNotes, history })) }
+    catch (err) { console.error('[study-web] state save failed:', err) }
+    return
+  }
+  if (saveTimer) return
+  saveTimer = setTimeout(() => { saveTimer = null; saveState(true) }, 500)
+}
+
 function pushHistory(entry) {
   history.push(entry)
   if (history.length > HISTORY_MAX) history.shift()
+  saveState()
+}
+
+// ---- lesson catalog (for the welcome screen) ----
+// Scans the course-material tree; a lesson is "cached" (⚡ instant load) when
+// notes/<chapter>/<lesson>/ already holds a rewritten web-notes*.md.
+function listLessons() {
+  const chapters = []
+  for (const ch of readdirSync(LESSONS_ROOT, { withFileTypes: true })) {
+    if (!ch.isDirectory()) continue
+    const lessons = []
+    for (const ls of readdirSync(join(LESSONS_ROOT, ch.name), { withFileTypes: true })) {
+      if (!ls.isDirectory()) continue
+      let cached = false
+      try {
+        cached = readdirSync(join(NOTES_ROOT, ch.name, ls.name))
+          .some(f => f.startsWith('web-notes') && f.endsWith('.md'))
+      } catch { /* no notes dir yet */ }
+      lessons.push({ name: ls.name, cached })
+    }
+    if (lessons.length) chapters.push({ name: ch.name, lessons })
+  }
+  return chapters
 }
 
 // ---- MCP channel server (low-level Server: needed to declare experimental caps) ----
@@ -125,6 +172,7 @@ mcp.setRequestHandler(CallToolRequestSchema, async req => {
         const markdown = String(args.markdown ?? '')
         const lesson = args.lesson ? String(args.lesson) : ''
         lastNotes = { lesson, markdown, ts: Date.now() }
+        saveState()
         broadcast({ type: 'notes', lesson, markdown, ts: Date.now() })
         return { content: [{ type: 'text', text: `notes shown in reading panel (${markdown.length} chars)` }] }
       }
@@ -178,6 +226,16 @@ const httpServer = createServer(async (req, res) => {
     text = String(text).trim()
     if (text) deliver(text)
     res.writeHead(204).end()
+    return
+  }
+
+  // GET /api/lessons — course catalog for the welcome screen
+  if (req.method === 'GET' && url.pathname === '/api/lessons') {
+    let chapters = []
+    try { chapters = listLessons() }
+    catch (err) { console.error('[study-web] listLessons failed:', err.message) }
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
+      .end(JSON.stringify({ chapters }))
     return
   }
 
@@ -247,6 +305,7 @@ function shutdown() {
   if (shuttingDown) return
   shuttingDown = true
   console.error('[study-web] shutting down')
+  saveState(true)
   setTimeout(() => process.exit(0), 2000).unref()
   try { for (const ws of clients) ws.close() } catch { /* best effort */ }
   wss.close(() => {})
