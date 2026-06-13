@@ -1,3 +1,4 @@
+<!-- 2026-06-11 已入庫 KG:Caching Fundamentals & Layers (303a076e)、Cache Patterns: Read axis vs Write axis (37fbb7f9)、Cache Eviction Policies (f150e9ff)、Cache Problems: Stampede/Consistency/Hot Key (2991b33e);均 principle。 -->
 # Caching 快取
 
 > 高讀取流量幾乎一定要快取。從 Postgres 讀用戶資料約 **50ms**(資料在磁碟),從 [[redis-cache|Redis]] 記憶體快取只要 **1ms** → 快 50 倍。快取**降低 DB 負載 + 削減延遲**,代價是引入「資料過時」與「失效」的新麻煩。
