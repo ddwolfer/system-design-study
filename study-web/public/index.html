@@ -583,6 +583,21 @@ function renderNotes(markdown, lesson) {
   notes.scrollTop = 0;
 }
 
+// Load a cached lesson's web-notes directly from disk — no LLM round-trip.
+// The server also broadcasts a `notes` event, so other tabs + refresh follow.
+async function openCachedLesson(chapter, lesson) {
+  try {
+    const r = await fetch("/api/notes?chapter=" + encodeURIComponent(chapter) +
+                          "&lesson=" + encodeURIComponent(lesson));
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const data = await r.json();
+    renderNotes(data.markdown, lesson);
+  } catch (err) {
+    // Fall back to asking the coach if the file can't be read.
+    sendText("上 " + chapter + "/" + lesson);
+  }
+}
+
 // ---------- 課程目錄 + 章節導航欄 ----------
 let CATALOG = [];   // [{name, lessons:[{name, cached}]}]
 
@@ -670,7 +685,9 @@ async function showCatalog(openChapter) {
       row.type = "button"; row.className = "lesson-row";
       row.appendChild(document.createTextNode(l.name));
       if (l.cached) { const c = document.createElement("span"); c.className = "chip"; c.textContent = "⚡"; row.appendChild(c); }
-      row.onclick = () => sendText("上 " + ch.name + "/" + l.name);
+      // Cached lessons load their web-notes directly (instant, no LLM round-trip);
+      // only uncached lessons ask the coach to prepare them.
+      row.onclick = () => l.cached ? openCachedLesson(ch.name, l.name) : sendText("上 " + ch.name + "/" + l.name);
       list.appendChild(row);
     }
     det.appendChild(list);
@@ -835,9 +852,9 @@ function findNextLesson() {
     const ch = CATALOG[ci];
     for (let li = 0; li < ch.lessons.length; li++) {
       if (cur.includes(ch.lessons[li].name)) {
-        if (li + 1 < ch.lessons.length) return ch.name + "/" + ch.lessons[li + 1].name;
+        if (li + 1 < ch.lessons.length) return { chapter: ch.name, l: ch.lessons[li + 1] };
         if (ci + 1 < CATALOG.length && CATALOG[ci + 1].lessons.length)
-          return CATALOG[ci + 1].name + "/" + CATALOG[ci + 1].lessons[0].name;
+          return { chapter: CATALOG[ci + 1].name, l: CATALOG[ci + 1].lessons[0] };
         return null;
       }
     }
@@ -846,8 +863,9 @@ function findNextLesson() {
 }
 $("qNext").onclick = () => {
   const next = findNextLesson();
-  if (next) sendText("上 " + next);
-  else showCatalog();                       // 還沒開課/找不到 → 開目錄挑
+  if (!next) { showCatalog(); return; }     // 還沒開課/找不到 → 開目錄挑
+  if (next.l.cached) openCachedLesson(next.chapter, next.l.name);
+  else sendText("上 " + next.chapter + "/" + next.l.name);
 };
 $("qPreload").onclick = () => sendText("預載接下來兩課(只寫快取,不用 show_notes)");
 $("qQuiz").onclick = () => sendText("不看筆記,考我 3 題目前這課的重點(active recall),我答完再給更正");

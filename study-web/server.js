@@ -229,6 +229,48 @@ const httpServer = createServer(async (req, res) => {
     return
   }
 
+  // GET /api/notes?chapter=&lesson= — serve a cached web-notes*.md directly,
+  // so the browser can load a prepared lesson into the reading panel WITHOUT a
+  // round-trip through the Claude session (instant, zero-token). Returns the
+  // raw markdown; the frontend renders it the same way as a `notes` broadcast.
+  if (req.method === 'GET' && url.pathname === '/api/notes') {
+    const chapter = url.searchParams.get('chapter') || ''
+    const lesson = url.searchParams.get('lesson') || ''
+    // Guard against path traversal — names must be single path segments.
+    if (!chapter || !lesson || /[\\/]|\.\./.test(chapter) || /[\\/]|\.\./.test(lesson)) {
+      res.writeHead(400, { 'content-type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ error: 'bad chapter/lesson' }))
+      return
+    }
+    const dir = join(NOTES_ROOT, chapter, lesson)
+    let file = null
+    try {
+      // Prefer the canonical web-notes.md; fall back to the first web-notes*.md.
+      const files = readdirSync(dir).filter(f => f.startsWith('web-notes') && f.endsWith('.md'))
+      file = files.includes('web-notes.md') ? 'web-notes.md' : files[0]
+    } catch { /* no notes dir */ }
+    if (!file) {
+      res.writeHead(404, { 'content-type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ error: 'no web-notes for this lesson' }))
+      return
+    }
+    let markdown = ''
+    try { markdown = readFileSync(join(dir, file), 'utf8') }
+    catch (err) {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8' })
+        .end(JSON.stringify({ error: err.message }))
+      return
+    }
+    // Mirror it into authoritative state + broadcast, so a refresh restores it
+    // and any other open tab follows along — same effect as show_notes.
+    lastNotes = { lesson, markdown, ts: Date.now() }
+    saveState()
+    broadcast({ type: 'notes', lesson, markdown, ts: Date.now() })
+    res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
+      .end(JSON.stringify({ lesson, markdown }))
+    return
+  }
+
   // GET /api/lessons — course catalog for the welcome screen
   if (req.method === 'GET' && url.pathname === '/api/lessons') {
     let chapters = []
