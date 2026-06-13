@@ -64,17 +64,17 @@ flowchart TD
 ```mermaid
 flowchart TD
     Client -->|config| APIGW --> ConfigSvc --> ConfigDB
-    Client -->|location| APIGW --> LocationSvc --> LocationCache["Location Cache\n(Redis)\ncell_id → [device_ids]"]
+    Client -->|location| APIGW --> LocationSvc --> LocationCache["Location Cache<br/>(Redis)<br/>cell_id → [device_ids]"]
 
     EventSource -->|earthquake event| Gateway
-    Gateway -->|enqueue| Q1[Queue\nRedis Stream]
+    Gateway -->|enqueue| Q1["Queue<br/>Redis Stream"]
     Q1 --> Orchestrator
 
-    Orchestrator --> SupersessionCache["Supersession Cache\nalert_id → latest_version"]
+    Orchestrator --> SupersessionCache["Supersession Cache<br/>alert_id → latest_version"]
     Orchestrator --> LocationCache
     Orchestrator --> ConfigDB
-    Orchestrator --> OutboxTable["Outbox Table\n(alert_id, version, device_id) → status"]
-    Orchestrator -->|tasks| Q2[Queue\nRedis Stream]
+    Orchestrator --> OutboxTable["Outbox Table<br/>(alert_id, version, device_id) → status"]
+    Orchestrator -->|tasks| Q2["Queue<br/>Redis Stream"]
 
     Q2 --> Workers
     Workers --> OutboxTable

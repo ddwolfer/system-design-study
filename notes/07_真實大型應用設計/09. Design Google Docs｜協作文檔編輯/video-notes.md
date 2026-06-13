@@ -46,20 +46,20 @@ Client
 ```mermaid
 graph TD
     subgraph Editors
-        CA[Client A\n編輯者]
-        CB[Client B\n編輯者]
-        CC[Client C\n編輯者]
+        CA["Client A<br/>編輯者"]
+        CB["Client B<br/>編輯者"]
+        CC["Client C<br/>編輯者"]
     end
 
     subgraph Viewers
-        CV[Client\n唯讀者]
+        CV["Client<br/>唯讀者"]
     end
 
     GW[API Gateway]
-    SR[Service Registry\nZookeeper / Consul]
-    DS[Doc Server\n擁有特定文件的 OT 處理器]
-    OS[(Operation Store\nCassandra / DynamoDB)]
-    Q[Queue\nKafka]
+    SR["Service Registry<br/>Zookeeper / Consul"]
+    DS["Doc Server<br/>擁有特定文件的 OT 處理器"]
+    OS[("Operation Store<br/>Cassandra / DynamoDB")]
+    Q["Queue<br/>Kafka"]
     VC[Viewer Cluster]
 
     CA -- WebSocket --> DS

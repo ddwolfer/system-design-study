@@ -63,12 +63,12 @@ graph TD
     RideService --> RideDB[(Ride DB)]
     RideService --> MapService[Map Service]
     RideService --> FareDB[(Fare DB)]
-    RideService --> Queue[Queue\nKafka / RabbitMQ]
+    RideService --> Queue["Queue<br/>Kafka / RabbitMQ"]
 
     Queue --> MatchingService[Matching Service]
-    MatchingService --> MatchingState[(Matching State Cache\nRedis)]
+    MatchingService --> MatchingState[("Matching State Cache<br/>Redis")]
     MatchingService --> LocationService[Location Service]
-    LocationService --> LocationCache[(Location Cache\nRedis)]
+    LocationService --> LocationCache[("Location Cache<br/>Redis")]
 
     AV[Autonomous Vehicle] -->|RPC / WebSocket| AVGateway[AV Gateway]
     AVGateway --> LocationService

@@ -36,13 +36,13 @@
 
 ```mermaid
 flowchart TD
-    Client["Client\n(Chat UI)"]
-    CS["Chat Service\n(Orchestrator)"]
-    ConvStore["Conversation Store\n(Redis + TTL)"]
-    QP["Query Processor\n- Intent Detection\n- Query Rewriting"]
+    Client["Client<br/>(Chat UI)"]
+    CS["Chat Service<br/>(Orchestrator)"]
+    ConvStore["Conversation Store<br/>(Redis + TTL)"]
+    QP["Query Processor<br/>- Intent Detection<br/>- Query Rewriting"]
     RS["Retrieval Service"]
-    BookingDB["Booking DB\n(Structured)"]
-    VectorDB["Vector DB\n(Unstructured / Embeddings)"]
+    BookingDB["Booking DB<br/>(Structured)"]
+    VectorDB["Vector DB<br/>(Unstructured / Embeddings)"]
     LLM["LLM Service"]
 
     Client -- "POST /chat (session_id, message)" --> CS
@@ -72,9 +72,9 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Docs["FAQ / Policy\n/ Help Docs"]
+    Docs["FAQ / Policy<br/>/ Help Docs"]
     Chunk["Chunking"]
-    Embed["Embedding Model\n→ [0.22, 0.48, 0.32, ...]"]
+    Embed["Embedding Model<br/>→ [0.22, 0.48, 0.32, ...]"]
     VDB["Vector DB"]
 
     Docs --> Chunk --> Embed --> VDB

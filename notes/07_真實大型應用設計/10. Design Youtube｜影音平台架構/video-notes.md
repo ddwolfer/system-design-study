@@ -78,21 +78,21 @@ flowchart TD
     Client([Client])
 
     subgraph Upload
-        Client -->|"① metadata"| VS[Video Service\nx多台]
+        Client -->|"① metadata"| VS["Video Service<br/>x多台"]
         VS -->|"② Presigned URL"| Client
-        Client -->|"③ 大檔直傳"| BS[(Blob Store\nS3 / GCS)]
+        Client -->|"③ 大檔直傳"| BS[("Blob Store<br/>S3 / GCS")]
         Client -->|"④ 完成通知"| VS
-        VS --> DB[(Database\nsharded by video_id)]
+        VS --> DB[("Database<br/>sharded by video_id")]
         VS --> Q[Queue]
-        Q --> PP[Video Post-Processor\nDAG Workers]
-        PP -->|"處理後片段\n+ manifest"| BS
+        Q --> PP["Video Post-Processor<br/>DAG Workers"]
+        PP -->|"處理後片段<br/>+ manifest"| BS
         PP -->|"更新狀態"| DB
     end
 
     subgraph Streaming
         Client2([Client]) -->|"⑤ 請求 manifest"| VS2[Video Service]
         VS2 -->|"manifest"| Client2
-        Client2 -->|"⑥ 請求片段"| CDN[CDN\nEdge Cache]
+        Client2 -->|"⑥ 請求片段"| CDN["CDN<br/>Edge Cache"]
         CDN -->|cache miss| BS
     end
 ```

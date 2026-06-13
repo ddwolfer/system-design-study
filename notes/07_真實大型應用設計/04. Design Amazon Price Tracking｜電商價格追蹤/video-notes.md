@@ -57,13 +57,13 @@ Notification Cron（輪詢）
 
 ```mermaid
 flowchart TD
-    Client["Client\n(Browser / Extension)"]
+    Client["Client<br/>(Browser / Extension)"]
     AGW["API Gateway"]
     PHS["Price History Service"]
     SS["Subscription Service"]
     PUS["Price Update Service"]
-    PriceDB[("Price DB\n(NoSQL, e.g. DynamoDB)\nPK: product_id\nSK: timestamp")]
-    SubDB[("Subscription DB\nPK: product_id\nSK: price_threshold+user_id")]
+    PriceDB[("Price DB<br/>(NoSQL, e.g. DynamoDB)<br/>PK: product_id<br/>SK: timestamp")]
+    SubDB[("Subscription DB<br/>PK: product_id<br/>SK: price_threshold+user_id")]
     Scheduler["Scheduler"]
     PQ["Priority Queue"]
     CrawlerWorker["Crawler Worker(s)"]
@@ -72,7 +72,7 @@ flowchart TD
     CDC_Sub["CDC (Sub DB)"]
     Queue["Message Queue"]
     PDWorker["Price Drop Worker"]
-    AggDB[("PriceAggregate Table\n/ Time-series / OLAP DB")]
+    AggDB[("PriceAggregate Table<br/>/ Time-series / OLAP DB")]
 
     %% Read path
     Client -->|"GET /price-history"| AGW

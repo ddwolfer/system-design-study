@@ -64,10 +64,10 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-    IS[Internal Service] -->|publish event| MQ[Message Queue\ne.g. SQS / Kafka]
+    IS[Internal Service] -->|publish event| MQ["Message Queue<br/>e.g. SQS / Kafka"]
     MQ -->|consume| Ing[Ingestion Service]
     Ing -->|查詢訂閱| DB[(Database)]
-    Ing -->|HTTP POST| EP[Registered Endpoint\n使用者的伺服器]
+    Ing -->|HTTP POST| EP["Registered Endpoint<br/>使用者的伺服器"]
 ```
 
 ---
@@ -88,11 +88,11 @@ flowchart LR
     DQ --> DW[Delivery Worker]
     DW -->|HTTP POST| EP[Registered Endpoint]
 
-    DW -->|retryable 失敗| ST[Storage\nRetryable Errors]
-    ST --> TS[Task Scheduler\ncron]
+    DW -->|retryable 失敗| ST["Storage<br/>Retryable Errors"]
+    ST --> TS["Task Scheduler<br/>cron"]
     TS -->|re-enqueue| DQ
 
-    DW -->|non-retryable 失敗 / 超過重試上限| DLQ[Dead Letter Queue\nDLQ]
+    DW -->|non-retryable 失敗 / 超過重試上限| DLQ["Dead Letter Queue<br/>DLQ"]
 ```
 
 **元件說明**

@@ -44,12 +44,12 @@ graph TD
     ClientB["Client B"] -->|WebSocket| GW2["Gateway 2"]
     ClientC["Client C"] -->|WebSocket| GW3["Gateway 3"]
 
-    GW1 -->|"1. 查 chat owner (Service Registry)"| SR["Service Registry\n(Zookeeper / Consul)"]
-    GW1 -->|"2. 轉發訊息"| PS["Pub/Sub Server\n(owns chat_id shard)"]
+    GW1 -->|"1. 查 chat owner (Service Registry)"| SR["Service Registry<br/>(Zookeeper / Consul)"]
+    GW1 -->|"2. 轉發訊息"| PS["Pub/Sub Server<br/>(owns chat_id shard)"]
 
-    SR -->|"shard_id → pub/sub server\nchat_id → {gateways}"| PS
+    SR -->|"shard_id → pub/sub server<br/>chat_id → {gateways}"| PS
 
-    PS -->|"3. 存訊息 + 產生 message_id"| DB["Database\n(DynamoDB)"]
+    PS -->|"3. 存訊息 + 產生 message_id"| DB["Database<br/>(DynamoDB)"]
     PS -->|"4. 推送到有訂閱的 Gateway"| GW2
     PS -->|"4. 推送到有訂閱的 Gateway"| GW3
 

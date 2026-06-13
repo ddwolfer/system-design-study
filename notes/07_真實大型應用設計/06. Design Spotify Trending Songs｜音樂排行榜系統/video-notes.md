@@ -33,16 +33,16 @@
 
 ```mermaid
 flowchart LR
-    Client["Client\n(含本地 SQLite 緩衝)"]
+    Client["Client<br/>(含本地 SQLite 緩衝)"]
     APIGW[API Gateway]
     MS[Metrics Service]
-    EventDB["Event DB\n(OLTP, e.g. DynamoDB/Cassandra)"]
+    EventDB["Event DB<br/>(OLTP, e.g. DynamoDB/Cassandra)"]
     CDC[CDC]
-    S3["Data Lakehouse\n(S3, Parquet/Iceberg)"]
-    Spark["Map-Reduce\n(Apache Spark)"]
-    OLAP["OLAP DB\n(Clickhouse / Snowflake)"]
+    S3["Data Lakehouse<br/>(S3, Parquet/Iceberg)"]
+    Spark["Map-Reduce<br/>(Apache Spark)"]
+    OLAP["OLAP DB<br/>(Clickhouse / Snowflake)"]
     Worker[Worker]
-    Cache["Cache\n(Redis)"]
+    Cache["Cache<br/>(Redis)"]
 
     Client -->|playback event| APIGW
     APIGW --> MS
@@ -75,14 +75,14 @@ flowchart LR
     Client[Client]
     APIGW[API Gateway]
     MS[Metrics Service]
-    MQ["Message Queue\n(Kafka / Kinesis)"]
-    Flink["Stream Processor\n(Apache Flink)"]
-    StateDB["State DB\n(Flink 狀態儲存)"]
-    OLAP["OLAP DB\n(Clickhouse / Snowflake)"]
+    MQ["Message Queue<br/>(Kafka / Kinesis)"]
+    Flink["Stream Processor<br/>(Apache Flink)"]
+    StateDB["State DB<br/>(Flink 狀態儲存)"]
+    OLAP["OLAP DB<br/>(Clickhouse / Snowflake)"]
     Worker[Worker]
-    Cache["Cache\n(Redis)"]
-    S3["Archive (S3)\n(for reconciliation)"]
-    SparkRecon["Offline Spark\n(每日對帳)"]
+    Cache["Cache<br/>(Redis)"]
+    S3["Archive (S3)<br/>(for reconciliation)"]
+    SparkRecon["Offline Spark<br/>(每日對帳)"]
 
     Client --> APIGW --> MS
     MS -->|publish event| MQ

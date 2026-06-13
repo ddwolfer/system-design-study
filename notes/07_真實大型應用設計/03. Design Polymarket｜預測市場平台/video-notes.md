@@ -97,8 +97,8 @@ Client → API GW → │        Matching Service           │
 graph TD
     Client["Client"]
     GW["API Gateway"]
-    MS["Matching Service\n(Order Books In-Memory\n+ WAL)"]
-    PS["Pub/Sub\n(e.g. Kafka)"]
+    MS["Matching Service<br/>(Order Books In-Memory<br/>+ WAL)"]
+    PS["Pub/Sub<br/>(e.g. Kafka)"]
     MDS["Market Data Service"]
     MDC["Market Data Cache"]
     OQS["Order Query Service"]

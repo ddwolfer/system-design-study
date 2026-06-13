@@ -75,10 +75,10 @@ graph TD
     Client([Client])
     CDN[CDN]
     GW[API Gateway]
-    SVC[QR Code Service\n(stateless)]
+    SVC["QR Code Service<br/>(stateless)"]
     Cache[(Cache / Redis)]
-    WDB[(Database\nWrite Replica)]
-    RDB[(Database\nRead Replicas)]
+    WDB[("Database<br/>Write Replica")]
+    RDB[("Database<br/>Read Replicas")]
 
     Client -- "讀圖 image" --> CDN
     CDN -- "cache miss" --> GW

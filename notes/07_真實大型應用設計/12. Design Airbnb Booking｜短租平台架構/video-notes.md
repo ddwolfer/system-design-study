@@ -73,17 +73,17 @@ Client → API Gateway → Load Balancer → [Home Service × N]
 
 ```mermaid
 graph TD
-    Client["Client\n(Browser / App)"]
+    Client["Client<br/>(Browser / App)"]
     GW["API Gateway"]
     LB["Load Balancer"]
     HS["Home Service"]
     SS["Search Service"]
     BS["Booking Service"]
     Cache["Cache (Redis)"]
-    DB[("Database\n(PostgreSQL / MySQL)")]
+    DB[("Database<br/>(PostgreSQL / MySQL)")]
     ES["ElasticSearch Cluster"]
-    CDC["CDC\n(Change Data Capture)"]
-    PS["Payment Service\n(External: Stripe/Adyen)"]
+    CDC["CDC<br/>(Change Data Capture)"]
+    PS["Payment Service<br/>(External: Stripe/Adyen)"]
 
     Client --> GW --> LB
     LB --> HS

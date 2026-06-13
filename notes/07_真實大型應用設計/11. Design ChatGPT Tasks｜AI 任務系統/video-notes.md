@@ -47,15 +47,15 @@
 graph TD
     User["使用者 (自然語言)"]
     ChatGPT["ChatGPT (Connector)"]
-    MCP["MCP Server\n(Model Context Protocol)"]
+    MCP["MCP Server<br/>(Model Context Protocol)"]
     APIGW["API Gateway"]
     JobSvc["Job Service"]
-    JobDB[("Job DB\n(NoSQL)\nJob 表 / Job Run 表 / RunEvent 表")]
-    Watcher["Watcher\n(poll Job DB)"]
-    RecurWatcher["Recurring Job Watcher\n(poll RunEvent)"]
-    MQ["Message Queue\n(SQS Delayed Queue)"]
-    Workers["Worker Pool\n(執行任務)"]
-    DLQ["Dead Letter Queue\n(DLQ)"]
+    JobDB[("Job DB<br/>(NoSQL)<br/>Job 表 / Job Run 表 / RunEvent 表")]
+    Watcher["Watcher<br/>(poll Job DB)"]
+    RecurWatcher["Recurring Job Watcher<br/>(poll RunEvent)"]
+    MQ["Message Queue<br/>(SQS Delayed Queue)"]
+    Workers["Worker Pool<br/>(執行任務)"]
+    DLQ["Dead Letter Queue<br/>(DLQ)"]
 
     User -->|自然語言提示| ChatGPT
     ChatGPT -->|列出工具 / 填入參數| MCP
