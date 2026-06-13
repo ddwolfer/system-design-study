@@ -12,4 +12,4 @@
 # After it starts, open http://127.0.0.1:7654 in your browser.
 set -e
 cd "$(dirname "$0")"
-exec claude --dangerously-load-development-channels server:study-web "$@"
+exec claude --resume "system_design_study" --dangerously-load-development-channels server:study-web "$@"
